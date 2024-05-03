@@ -95,8 +95,8 @@ public class HackDisplay extends ManagedComponent {
     public void propagate(CircuitState circuitState) {
         final State state = getState(circuitState);
 
-        final int addr = val(circuitState, Pin.ADDR).toIntValue();
-        final int data = val(circuitState, Pin.DATA_IN).toIntValue();
+        final int addr = (int) val(circuitState, Pin.ADDR).toLongValue();
+        final int data = (int) val(circuitState, Pin.DATA_IN).toLongValue();
         final byte[] pixels = ((DataBufferByte) state.img.getRaster().getDataBuffer()).getData();
         final int idx = addr * 2;
         if (state.tick(val(circuitState, Pin.CLK)) && val(circuitState, Pin.WE) == Value.TRUE) {
