@@ -56,9 +56,38 @@ class ALU extends InstanceFactory {
         this.setPorts(ports);
     }
 
+
     public void propagate(InstanceState state) {
-        state.setPort(3, Value.createKnown(BitWidth.ONE, 0), 0);
-        state.setPort(4, Value.createKnown(BitWidth.ONE, 0), 0);
+
+        // Extract the binary string of the operation we are performing
+        String opPort = state.getPortValue(2).toBinaryString();
+
+        // The two operands of the ALU
+        Value a = state.getPortValue(0);
+        Value b = state.getPortValue(1);
+
+        BitWidth aluWidth = a.getBitWidth();
+
+        int result;
+
+        switch (opPort){
+            case "000" -> result = a.toIntValue() & b.toIntValue();
+            case "001" -> result = a.toIntValue() | b.toIntValue();
+            case "010" -> result = a.toIntValue() + b.toIntValue();
+            case "100" -> result = a.toIntValue() & ~b.toIntValue();
+            case "101" -> result = a.toIntValue() | ~b.toIntValue();
+            case "110" -> result = a.toIntValue() - b.toIntValue();
+            case "111" -> result = Integer.parseInt(a.toDecimalString(true)) < Integer.parseInt(b.toDecimalString(true)) ? 1 : 0;
+            default -> result = 0;
+
+        }
+
+        // Check to see if the result == 0
+        Value zero = Value.createKnown(BitWidth.ONE, result == 0 ? 1 : 0);
+        Value out = Value.createKnown(aluWidth, result);
+
+        state.setPort(3, zero, 0);
+        state.setPort(4, out, 0);
     }
 
     public void paintInstance(InstancePainter painter) {
@@ -110,37 +139,23 @@ class ALU extends InstanceFactory {
         // This determines the appropriate text to display based on the opcode
         String opText;
         switch (op.toBinaryString()){
-            case "000":
-                opText = "A&B";
-                break;
-
-            case "001":
-                opText = "A||B";
-                break;
-
-            case "010":
-                opText = "A+B";
-                break;
-            case "100":
-                opText = "A&!B";
-                break;
-            case "101":
-                opText = "A||!B";
-                break;
-            case "110":
-                opText = "A-B";
-                break;
-            case "111":
-                opText = "A<B";
-                break;
-
-            // If the opcode doesn't match any of the above it is invalid
-            default:
-                opText = "Err";
+            case "000" -> opText = "A&B";
+            case "001" -> opText = "A||B";
+            case "010" -> opText = "A+B";
+            case "100" -> opText = "A&!B";
+            case "101" -> opText = "A||!B";
+            case "110" -> opText = "A-B";
+            case "111" -> opText = "A<B";
+            default    -> opText = "Err";
         }
 
         // Draw the opcode
         GraphicsUtil.drawCenteredText(graphics, opText, centerX, centerY);
 
+    }
+
+    private static String signExtend(String binaryString, int targetLength) {
+        char signBit = binaryString.charAt(0);
+        return String.format("%" + targetLength + "s", binaryString).replace(' ', signBit);
     }
 }

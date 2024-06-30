@@ -121,7 +121,7 @@ class CPUData implements InstanceData, Cloneable {
         Value var25 = var0.get(8);
         Value var26 = var0.get(7);
         Value var27 = var0.get(6);
-        Value[] var28 = ALU.compute(var4, var21, var22, var23, var24, var25, var26, var27);
+        Value[] var28 = {Value.createKnown(BitWidth.FIVE, 3)};
         var6 = var28[0];
         int var29 = (var0.get(2).toIntValue() << 2 | var0.get(1).toIntValue() << 1 | var0.get(0).toIntValue() << 0);
         boolean var38 = var28[1] == Value.TRUE;
