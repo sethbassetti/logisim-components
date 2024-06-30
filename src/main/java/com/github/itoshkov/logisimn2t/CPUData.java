@@ -98,7 +98,7 @@ class CPUData implements InstanceData, Cloneable {
 
     public static Value[] compute(Value var0, Value var1, Value var2, Value var3, Value var4, Value var5, Value var6, boolean var7) {
         boolean var8 = var0.get(15) == Value.TRUE;
-        long var9 = (long)(var0.get(5).toIntValue() << 2 | var0.get(4).toIntValue() << 1 | var0.get(3).toIntValue() << 0);
+        int var9 = (var0.get(5).toIntValue() << 2 | var0.get(4).toIntValue() << 1 | var0.get(3).toIntValue() << 0);
         boolean var11 = var9 == 4L || var9 == 5L || var9 == 6L || var9 == 7L;
         boolean var12 = var9 == 2L || var9 == 3L || var9 == 6L || var9 == 7L;
         boolean var13 = var9 == 1L || var9 == 3L || var9 == 5L || var9 == 7L;
@@ -123,7 +123,7 @@ class CPUData implements InstanceData, Cloneable {
         Value var27 = var0.get(6);
         Value[] var28 = ALU.compute(var4, var21, var22, var23, var24, var25, var26, var27);
         var6 = var28[0];
-        long var29 = (long)(var0.get(2).toIntValue() << 2 | var0.get(1).toIntValue() << 1 | var0.get(0).toIntValue() << 0);
+        int var29 = (var0.get(2).toIntValue() << 2 | var0.get(1).toIntValue() << 1 | var0.get(0).toIntValue() << 0);
         boolean var38 = var28[1] == Value.TRUE;
         boolean var39 = var28[2] == Value.TRUE;
         boolean var40 = var39 || var38;
