@@ -41,7 +41,10 @@ class ALU extends InstanceFactory {
 
         // Allow us to change the bit-width of the ALU.
         // By Default 8
-        this.setAttributes(new Attribute[]{StdAttr.WIDTH}, new Object[]{BitWidth.create(8)});
+        this.setAttributes(
+                new Attribute[]{StdAttr.WIDTH},
+                new Object[]{BitWidth.create(8)}
+        );
         this.setOffsetBounds(Bounds.create(0, 0, ALU_WIDTH, ALU_HEIGHT));
 
         // Define all the ports, their positions, type, and bitwidth

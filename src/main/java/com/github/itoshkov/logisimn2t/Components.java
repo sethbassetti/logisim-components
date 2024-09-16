@@ -10,8 +10,8 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class Components extends Library {
     private final List<? extends Tool> tools = Arrays.asList(
-            new AddTool(new Inc()),
-            new AddTool(new ALU())
+            new AddTool(new ALU()),
+            new AddTool(new PC())
     );
 
     @Override
@@ -21,6 +21,6 @@ public class Components extends Library {
 
     @Override
     public String getDisplayName() {
-        return "Assignment 3 Components";
+        return "ALU";
     }
 }

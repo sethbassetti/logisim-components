@@ -1,5 +1,7 @@
 package com.github.itoshkov.logisimn2t;
 
+import static com.cburch.logisim.std.Strings.S;
+
 import com.cburch.logisim.data.Attribute;
 import com.cburch.logisim.data.BitWidth;
 import com.cburch.logisim.data.Bounds;
@@ -16,78 +18,100 @@ import java.awt.Color;
 import java.awt.Graphics;
 
 class PC extends InstanceFactory {
-    private static final int PC_WIDTH = 160;
-    private static final int PC_HEIGHT = 40;
-    private static final int ULX = -160;
-    private static final int ULY = -20;
-    private static final int TOP_SEP = 40;
-    private static final int LEFT_SEP = 10;
-    private static final int IN = 0;
-    private static final int IN_INC = 1;
-    private static final int IN_LOAD = 2;
-    private static final int IN_RESET = 3;
-    private static final int OUT = 4;
-    private static final int CK = 5;
-    private static final int NUM_PORTS = 6;
+    private static final BitWidth BIT_WIDTH = BitWidth.create(8);
 
     public PC() {
         super("PC");
-        this.setOffsetBounds(Bounds.create(-160, -20, 160, 40));
-        this.setAttributes(new Attribute[]{StdAttr.WIDTH, StdAttr.EDGE_TRIGGER}, new Object[]{BitWidth.create(16), StdAttr.TRIG_RISING});
-        Port[] var1 = new Port[]{new Port(-160, -10, "input", StdAttr.WIDTH), new Port(-120, -20, "input", 1), new Port(-80, -20, "input", 1), new Port(-40, -20, "input", 1), new Port(0, 0, "output", StdAttr.WIDTH), new Port(-160, 10, "input", 1)};
-        this.setPorts(var1);
+        this.setAttributes(
+                new Attribute[]{StdAttr.WIDTH}, new Object[]{BIT_WIDTH}
+        );
+
+        setInstancePoker(PCPoker.class);
+
+        setOffsetBounds(Bounds.create(-160, -20, 160, 40));
+        Port[] ports = new Port[]{
+                new Port(-80, 20, Port.INPUT, 1), // 0 - Clock
+                new Port(-160, 0, Port.INPUT, StdAttr.WIDTH), // 1 - In
+                new Port(-120, -20, Port.INPUT, 1),       // 2 - Reset
+                new Port(-80, -20, Port.INPUT, 1), // 3 - Load
+                new Port(-40, -20, Port.INPUT, 1), // 4 - Increment
+                new Port(0,0, Port.OUTPUT, StdAttr.WIDTH), // 5 - output
+        };
+        ports[0].setToolTip(S.getter("Clock: memory value updates on clock trigger"));
+        ports[1].setToolTip(S.getter("Input: What to load the PC with"));
+        ports[2].setToolTip(S.getter("Reset: If 1, then resets PC"));
+        ports[3].setToolTip(S.getter("Load: If 1, then loads input into PC"));
+        ports[4].setToolTip(S.getter("Increment: If 1, then PC increments on clock cycles."));
+
+        setPorts(ports);
     }
 
-    public void propagate(InstanceState var1) {
-        BitWidth var2 = (BitWidth)var1.getAttributeValue(StdAttr.WIDTH);
-        PCData var3 = PCData.get(var1, var2);
-        Object var4 = var1.getAttributeValue(StdAttr.EDGE_TRIGGER);
-        boolean var5 = var3.updateClock(var1.getPortValue(5), var4);
-        if (var5) {
-            var3.setValue(nextValue(var1, var3.getValue()));
-            var1.setPort(4, var3.getValue(), 9);
+    public void propagate(InstanceState state) {
+        BitWidth width = state.getAttributeValue(StdAttr.WIDTH);
+        PCData cur = PCData.get(state, width);
+
+        boolean trigger = cur.updateClock(state.getPortValue(0));
+
+        // If triggered (clock update), here is how we handle it
+        if (trigger){
+            int nextValue;
+
+            // Port 2 - Reset
+            if (state.getPortValue(2).toIntValue() == 1){
+                nextValue = 0;
+            }
+            // Port 3 - Load
+            else if(state.getPortValue(3).toIntValue() == 1){
+                nextValue = state.getPortValue(1).toIntValue();
+            }
+            // Port 4 - Increment
+            else if(state.getPortValue(4).toIntValue() == 1){
+                nextValue = cur.getValue().toIntValue() + 1;
+            }
+            // Else, stay the same
+            else {
+                nextValue = cur.getValue().toIntValue();
+            }
+            cur.setValue(Value.createKnown(BIT_WIDTH, nextValue));
+
         }
 
+        // Remember to update the output port
+        state.setPort(5, cur.getValue(), 1);
+
     }
 
-    public void paintInstance(InstancePainter var1) {
-        Bounds var2 = var1.getBounds();
-        BitWidth var3 = (BitWidth)var1.getAttributeValue(StdAttr.WIDTH);
-        PCData var4 = PCData.get(var1, var3);
-        GraphicsUtil.drawCenteredText(var1.getGraphics(), "PC:" + StringUtil.toHexString(var3.getWidth(), (int) var4.getValue().toIntValue()), var2.getX() + var2.getWidth() / 2, var2.getY() + 3 * var2.getHeight() / 4);
-        var1.drawRectangle(var1.getBounds(), "");
-        Graphics var5 = var1.getGraphics();
-        var5.setColor(Color.BLACK);
-        var1.drawClockSymbol(var2.getX(), var2.getY() + 30);
-        var1.drawPort(5, "", Direction.EAST);
-        var1.drawPort(0, "in", Direction.EAST);
-        var1.drawPort(4, "out", Direction.WEST);
-        var1.drawPort(1, "inc", Direction.NORTH);
-        var1.drawPort(2, "load", Direction.NORTH);
-        var1.drawPort(3, "reset", Direction.NORTH);
+    public void paintInstance(InstancePainter painter) {
+        Bounds bounds = painter.getBounds();
+        painter.drawRectangle(bounds, "");
+
+        BitWidth width = painter.getAttributeValue(StdAttr.WIDTH);
+        PCData data = PCData.get(painter, width);
+
+        GraphicsUtil.drawCenteredText(painter.getGraphics(), "PC:" + StringUtil.toHexString(width.getWidth(), data.getValue().toIntValue()), bounds.getX() + bounds.getWidth() / 2, bounds.getY() + bounds.getHeight() / 2);
+
+        // Draw the clock symbol
+        int leftSide = bounds.getX();
+        int midX = leftSide + bounds.getWidth() / 2;
+        int bottomSide = bounds.getY() + bounds.getHeight();
+        int midY = bottomSide - bounds.getHeight() / 2;
+        int triangleSize = 7;
+
+        // Draw Clock Symbol
+        painter.getGraphics().drawPolygon(
+                new int[]{midX - triangleSize, midX, midX + triangleSize},
+                new int[]{bottomSide, bottomSide - triangleSize, bottomSide},
+                3
+                );
+        painter.drawPort(0);
+
+        // Draw flags
+        painter.drawPort(1, "in", Direction.EAST);
+        painter.drawPort(2, "reset", Direction.NORTH);
+        painter.drawPort(3, "load", Direction.NORTH);
+        painter.drawPort(4, "inc", Direction.NORTH);
+        painter.drawPort(5, "out", Direction.WEST);
+
     }
 
-    static Value nextValue(InstanceState var0, Value var1) {
-        Value var2 = var0.getPortValue(4);
-        BitWidth var3 = var2.getBitWidth();
-        int var4;
-        if (var0.getPortValue(3) == Value.TRUE) {
-            var4 = 0;
-        } else if (var0.getPortValue(2) == Value.TRUE) {
-            Value var5 = var0.getPortValue(0);
-            if (!var5.isFullyDefined()) {
-                return var1;
-            }
-
-            var4 = var5.toIntValue();
-        } else {
-            if (var0.getPortValue(1) != Value.TRUE) {
-                return var1;
-            }
-
-            var4 = var1.toIntValue() + 1;
-        }
-
-        return Value.createKnown(var3, var4);
-    }
 }
